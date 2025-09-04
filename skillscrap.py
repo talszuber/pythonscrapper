@@ -3,7 +3,9 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.request
 import json
+import csv
 from csv import writer
+
 response = requests.get('https://justjoin.it/job-offers/all-locations/testing')
 soup = BeautifulSoup(response.content, 'html.parser')
 content_div = soup.find('script', type= 'application/ld+json')
@@ -15,20 +17,40 @@ content_div = json.loads(content_div)
 offer_amounts = len(content_div)
 
 i = 0
-#with open("offers_skills.csv", "a", newline="",encoding='utf-8-sig') as file:
+d= 0
+with open('job_list.csv', 'r') as f:
+    csvreader = csv.reader(f)
+    job_list = list(csvreader)
+    print(job_list)
 while i  < offer_amounts:
-#    writer_object = writer(file)
     offer = content_div[i]
     url = offer['url']
-    response = urllib.request.urlopen(url)
-    response_API = requests.get('https://api.justjoin.it/v1/offers/*id*'.replace('*id*', url.split('/')[-1]))
-    response_json = response_API.json()
-    title = response_json['title']
-    company = response_json['companyName']
-    required_skills = response_json['requiredSkills']
-    nth_skills = response_json['niceToHaveSkills']
-    exp = response_json['experienceLevel']['label']
-    print(f' {title}, {exp}, {required_skills}, {nth_skills}')
-#    writer_object.writerow(f'{title}, {company}, {exp}, {required_skills}, {nth_skills}')
+
+    if any(f'{url.split('/')[-1]}' in s for s in job_list):
+        d += 1
+        print(f'Duplicate no: {d}')
+    else:
+        response = urllib.request.urlopen(url)
+        response_API = requests.get('https://api.justjoin.it/v1/offers/*id*'.replace('*id*', url.split('/')[-1]))
+        response_json = response_API.json()
+        slug = response_json['slug']
+        slug = slug.replace('"',' ')
+        title = response_json['title']
+        title = title.replace('"',' ')
+        exp = response_json['experienceLevel']['label']
+        exp = exp.replace('"',' ')
+        required_skills = response_json['requiredSkills']
+        required_skills = str(required_skills)
+        required_skills = required_skills.replace('"name":','').replace('}','').replace('{','').replace('[','').replace(']','').replace('"','').replace('level','lvl').replace(':','')
+        nth_skills = response_json['niceToHaveSkills']
+        nth_skills = str(nth_skills)
+        nth_skills = nth_skills.replace('name','').replace('}','').replace('{','').replace('[','').replace(']','').replace('"','').replace('level','lvl').replace(':','')
+
+
+        with open('job_list.csv', 'a', encoding='utf-8', newline='') as f:
+            csvwriter = writer(f)
+            csvwriter.writerow([slug, title, exp, required_skills, nth_skills])
+            f.close()
+        print(f'New entry: {i}')
     i += 1
 print('Done')
