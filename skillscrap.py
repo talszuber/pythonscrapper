@@ -6,18 +6,27 @@ import json
 import csv
 from csv import writer
 
-response = requests.get('https://justjoin.it/job-offers/all-locations/testing')
-soup = BeautifulSoup(response.content, 'html.parser')
-content_div = soup.find('script', type= 'application/ld+json')
-content_div = content_div.text
-content_div = content_div.replace('<script type="application/ld+json"> {"@context":"https://schema.org","@type":"CollectionPage","name":"Job Offers","hasPart": ' , '').replace(']}', ']')
-content_div = content_div.replace('{"@context":"https://schema.org","@type":"CollectionPage","name":"Job Offers","hasPart":', '').replace('', '')
-content_div = content_div.replace('</script>', '')
-content_div = json.loads(content_div)
+def grab_jobs(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    content_div = soup.find('script', type= 'application/ld+json')
+    content_div = content_div.text
+    content_div = content_div.replace('<script type="application/ld+json"> {"@context":"https://schema.org","@type":"CollectionPage","name":"Job Offers","hasPart": ' , '').replace(']}', ']')
+    content_div = content_div.replace('{"@context":"https://schema.org","@type":"CollectionPage","name":"Job Offers","hasPart":', '').replace('', '')
+    content_div = content_div.replace('</script>', '')
+    content_div = json.loads(content_div)
+
+    return content_div
+
+
+url = input('enter section of justjoin.it (e.g. python, java, testing, or all):')
+
+content_div = grab_jobs(url)
+
 offer_amounts = len(content_div)
 
 i = 0
-d= 0
+d = 0
 with open('job_list.csv', 'r') as f:
     csvreader = csv.reader(f)
     job_list = list(csvreader)
@@ -41,7 +50,7 @@ while i  < offer_amounts:
         exp = exp.replace('"',' ')
         required_skills = response_json['requiredSkills']
         required_skills = str(required_skills)
-        required_skills = required_skills.replace('"name":','').replace('}','').replace('{','').replace('[','').replace(']','').replace('"','').replace('level','lvl').replace(':','')
+        required_skills = required_skills.replace('name','').replace('}','').replace('{','').replace('[','').replace(']','').replace('"','').replace('level','lvl').replace(':','')
         nth_skills = response_json['niceToHaveSkills']
         nth_skills = str(nth_skills)
         nth_skills = nth_skills.replace('name','').replace('}','').replace('{','').replace('[','').replace(']','').replace('"','').replace('level','lvl').replace(':','')
